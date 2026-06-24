@@ -44,6 +44,7 @@ By default, Home Assistant locks the navigation header to the top of the screen.
 - 🍏 **iOS Compatible** - Carefully optimized to look native and respect safe areas on iOS devices (both with and without a Home Button).
 - 👻 **Invisible Helper** - This card does not display anything on your actual dashboard; it only runs in the background. It is solely visible when you open the Edit mode.
 - 🧠 **100% GUI Editor Ready** - Effortlessly configure the entire card through the visual editor without needing to write YAML.
+- 🙈 **Hide Header Elements** - Optionally hide the menu button, view tabs, or overflow (...) menu from the dashboard header for a cleaner look.
 
 ## 📥 Installation
 
@@ -51,11 +52,11 @@ By default, Home Assistant locks the navigation header to the top of the screen.
 
 The easiest way to install and keep **Header Position Card** updated is via HACS.
 
-[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=xBourner&repository=header-position-card&category=plugin)
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=romainrbr&repository=header-position-card&category=plugin)
 
 1. Ensure [HACS](https://hacs.xyz) is installed.
 2. Open HACS in Home Assistant.
-3. Search for **Header Position Card**, or add this repository (`https://github.com/xBourner/header-position-card`) as a Custom Repository under the Dashboard category.
+3. Search for **Header Position Card**, or add this repository (`https://github.com/romainrbr/header-position-card`) as a Custom Repository under the Dashboard category.
 4. Download and Install.
 5. **Clear your browser cache** and refresh (F5) the page.
 
@@ -86,6 +87,16 @@ Choose the device viewports where you want the navbar location to change (simila
   <img width="515" alt="Visual Editor GUI" src="https://github.com/user-attachments/assets/eaa2125e-48d7-41f4-b198-29ff4e0858c7">
 </p>
 
+### Hiding Header Elements
+
+You can also hide specific elements from the dashboard header via the **Hide Header Elements** section in the visual editor:
+
+- **Hide Menu Button** - Hides the hamburger menu button on the left.
+- **Hide Views (Tabs)** - Hides the dashboard view tabs.
+- **Hide Overflow Menu (...)** - Hides the "..." overflow button (which contains Add to Home Assistant, Research, Assist, and Edit Dashboard).
+
+These options work independently of the header position feature, so you can hide elements with or without moving the header to the bottom.
+
 ### YAML Example
 If you prefer YAML over the Visual Editor, here is an example configuration:
 ```yaml
@@ -97,6 +108,9 @@ Style:
   - wide
 global_mobile: true
 global_wide: false
+hide_menu_button: false
+hide_views: false
+hide_overflow: true
 ```
 
 ## ❤️ Support My Work

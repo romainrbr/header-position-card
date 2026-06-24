@@ -21,13 +21,21 @@ class HeaderPosition {
         newConfig.Style = newConfig.Style === "None" ? [] : [newConfig.Style];
       }
     }
+    newConfig.hide_menu_button = newConfig.hide_menu_button === true;
+    newConfig.hide_views = newConfig.hide_views === true;
+    newConfig.hide_overflow = newConfig.hide_overflow === true;
     this.config = newConfig;
     this.applyChanges();
   }
 
   applyChanges() {
     const styles = this.config.Style;
-    if (!styles || styles.length === 0) {
+    const hasHideOptions =
+      this.config.hide_menu_button === true ||
+      this.config.hide_views === true ||
+      this.config.hide_overflow === true;
+
+    if (!hasHideOptions && (!styles || styles.length === 0)) {
       this.resetHeader();
       this.deactivateGlobal();
       return;
@@ -86,6 +94,10 @@ class HeaderPosition {
         this.applyHeaderPositionChanges();
         this.applyPaddingChanges();
       }
+    } else if (hasHideOptions) {
+      this.deactivateGlobal();
+      this.resetHeader();
+      this.applyHidingChanges();
     } else {
       this.deactivateGlobal();
       this.resetHeader();
@@ -140,7 +152,10 @@ class HeaderPosition {
           const huiRoot = lovelace.shadowRoot?.querySelector("hui-root");
           if (huiRoot) {
               const header = huiRoot.shadowRoot?.querySelector(".header");
-              if (header) this.styleHeader(header);
+              if (header) {
+                  this.styleHeader(header);
+                  this.styleHiding(header);
+              }
               this.stylePadding(huiRoot.shadowRoot?.querySelector("#view"));
           }
       }
@@ -206,7 +221,42 @@ class HeaderPosition {
           }
       }
   }
-  
+
+  styleHiding(element) {
+    if (!element) return;
+
+    const styleId = "header-position-card-hide-style";
+    let styleEl = element.querySelector(`#${styleId}`);
+
+    const hideMenu = this.config.hide_menu_button === true;
+    const hideViews = this.config.hide_views === true;
+    const hideOverflow = this.config.hide_overflow === true;
+
+    if (!hideMenu && !hideViews && !hideOverflow) {
+      if (styleEl) styleEl.remove();
+      return;
+    }
+
+    if (!styleEl) {
+      styleEl = document.createElement("style");
+      styleEl.id = styleId;
+      element.appendChild(styleEl);
+    }
+
+    let css = "";
+    if (hideMenu) {
+      css += 'ha-menu-button, [slot="navigationIcon"] { display: none !important; }\n';
+    }
+    if (hideViews) {
+      css += 'ha-tab-group, [slot="tabs"] { display: none !important; }\n';
+    }
+    if (hideOverflow) {
+      css += 'ha-button-menu { display: none !important; }\n';
+    }
+
+    styleEl.innerHTML = css;
+  }
+
   stylePadding(element) {
       if (!element) return;
       const topPadding = "env(safe-area-inset-top)";
@@ -221,6 +271,12 @@ class HeaderPosition {
   applyHeaderPositionChanges() {
     let appHeader = this.huiRootElement?.querySelector(".header");
     this.styleHeader(appHeader);
+    this.styleHiding(appHeader);
+  }
+
+  applyHidingChanges() {
+    let appHeader = this.huiRootElement?.querySelector(".header");
+    this.styleHiding(appHeader);
   }
 
   applyPaddingChanges() {
@@ -241,8 +297,11 @@ class HeaderPosition {
       appHeader.style.removeProperty("border-bottom");
       appHeader.style.removeProperty("border-top");
       
-      const styleEl = appHeader.querySelector("#header-position-card-tab-style");
-      if (styleEl) styleEl.remove();
+       const styleEl = appHeader.querySelector("#header-position-card-tab-style");
+       if (styleEl) styleEl.remove();
+
+       const hideStyleEl = appHeader.querySelector("#header-position-card-hide-style");
+       if (hideStyleEl) hideStyleEl.remove();
 
       const toolbar = appHeader.querySelector(".toolbar");
       if (toolbar) {
@@ -301,7 +360,7 @@ class HeaderPositionCard extends HTMLElement {
   }
 
   static getStubConfig() {
-    return { Style: [] };
+    return { Style: [], hide_menu_button: false, hide_views: false, hide_overflow: false };
   }
 }
 
@@ -311,7 +370,7 @@ window.customCards.push({
   type: "header-position-card",
   name: "Header Position Card",
   description:
-    "A card that allows toggling the dashboard header position (per view)",
+    "A card that allows toggling the dashboard header position and hiding header elements (per view)",
 });
 
 class HeaderPositionEditor extends HTMLElement {
@@ -389,10 +448,30 @@ class HeaderPositionEditor extends HTMLElement {
         });
       }
       
-      return schema;
+       return schema;
+   }
+
+   _getHideSchema() {
+    return [
+      {
+        name: "hide_menu_button",
+        selector: { boolean: {} },
+        label: "Hide Menu Button",
+      },
+      {
+        name: "hide_views",
+        selector: { boolean: {} },
+        label: "Hide Views (Tabs)",
+      },
+      {
+        name: "hide_overflow",
+        selector: { boolean: {} },
+        label: "Hide Overflow Menu (...)",
+      },
+    ];
   }
 
-  _updateForm() {
+   _updateForm() {
     if (!this._hass || !this._config) return;
     
     const styles = Array.isArray(this._config.Style) ? this._config.Style.map(s => s.toLowerCase()) : [];
@@ -457,6 +536,34 @@ class HeaderPositionEditor extends HTMLElement {
     
     customSection.appendChild(customForm);
     container.appendChild(customSection);
+
+    const hideSection = document.createElement("div");
+    hideSection.style.borderBottom = "1px solid var(--divider-color)";
+    hideSection.style.paddingBottom = "12px";
+    hideSection.style.marginBottom = "12px";
+
+    const hideTitle = document.createElement("h4");
+    hideTitle.textContent = "Hide Header Elements";
+    hideTitle.style.margin = "0 0 4px 0";
+    hideTitle.style.opacity = "0.8";
+    hideSection.appendChild(hideTitle);
+
+    const hideDesc = document.createElement("p");
+    hideDesc.textContent = "Hide specific elements from the dashboard header.";
+    hideDesc.style.margin = "0 0 8px 0";
+    hideDesc.style.opacity = "0.6";
+    hideDesc.style.fontSize = "0.85em";
+    hideSection.appendChild(hideDesc);
+
+    const hideForm = document.createElement("ha-form");
+    hideForm.hass = this._hass;
+    hideForm.data = data;
+    hideForm.schema = this._getHideSchema();
+    hideForm.computeLabel = (s) => s.label;
+    hideForm.addEventListener("value-changed", this._configChanged.bind(this));
+
+    hideSection.appendChild(hideForm);
+    container.appendChild(hideSection);
 
     this.appendChild(container);
   }
